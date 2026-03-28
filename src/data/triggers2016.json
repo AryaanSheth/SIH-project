@@ -1,0 +1,5 @@
+[
+  {"id":"harambe","phrases":["harambe"],"matchType":"exact","severity":10,"auraModifier":-20,"category":"classic","media":{"sound":"/assets/sounds/harambe.mp3","gif":"/assets/gifs/harambe.gif","video":null,"duration":3000}},
+  {"id":"dabbing","phrases":["dabbing"],"matchType":"substring","severity":8,"auraModifier":-15,"category":"classic","media":{"sound":"/assets/sounds/dabbing.mp3","gif":"/assets/gifs/dabbing.gif","video":null,"duration":2800}},
+  {"id":"damn-daniel","phrases":["damn daniel"],"matchType":"substring","severity":7,"auraModifier":-10,"category":"classic","media":{"sound":"/assets/sounds/damn-daniel.mp3","gif":"/assets/gifs/damn-daniel.gif","video":null,"duration":2800}}
+]

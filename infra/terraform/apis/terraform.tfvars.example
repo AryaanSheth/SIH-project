@@ -1,0 +1,5 @@
+project_id = "hjd-dev-hub-ca"
+region     = "northamerica-northeast1"
+
+# Keep true if you want future-proof APIs pre-enabled for schedule/secret workflows.
+enable_optional_apis = true
