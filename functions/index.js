@@ -47,12 +47,47 @@ app.post("/export-session", async (req, res) => {
       gcsUri: `gs://${bucketName}/${objectName}`
     });
   } catch (error) {
-    res.status(500).send(error.message || "Export failed");
+    if (!res.headersSent) res.status(500).send(error.message || "Export failed");
+  }
+});
+
+app.post("/stream-audio", (req, res) => {
+  try {
+    if (!bucketName) return res.status(500).send("Missing EXPORT_BUCKET");
+    
+    if (exportToken) {
+      const incoming = req.header("x-export-token");
+      if (incoming !== exportToken) return res.status(401).send("Unauthorized");
+    }
+
+    const sessionId = req.query.sessionId || `stream_${Date.now()}`;
+    const objectName = `sessions/${sessionId}/audio.webm`;
+    
+    const file = storage.bucket(bucketName).file(objectName);
+    const writeStream = file.createWriteStream({
+      contentType: "audio/webm",
+      resumable: true
+    });
+
+    console.log(`Starting stream for ${objectName}`);
+    req.pipe(writeStream);
+
+    writeStream.on("finish", () => {
+      console.log(`Stream finished: ${objectName}`);
+      res.status(200).send("OK");
+    });
+
+    writeStream.on("error", (err) => {
+      console.error(`Stream error for ${objectName}: ${err.message}`);
+      if (!res.headersSent) res.status(500).send(err.message);
+    });
+  } catch (error) {
+    if (!res.headersSent) res.status(500).send(error.message);
   }
 });
 
 const port = process.env.PORT || 8080;
 app.listen(port, () => {
-  // eslint-disable-next-line no-console
   console.log(`Export service listening on :${port}`);
 });
+

@@ -1,6 +1,7 @@
 export async function exportSessionToGcs(payload) {
-  const endpoint = import.meta.env.VITE_GCS_EXPORT_ENDPOINT;
-  if (!endpoint) return { skipped: true, reason: "missing-endpoint" };
+  const root = import.meta.env.VITE_GCS_EXPORT_ENDPOINT;
+  if (!root) return { skipped: true, reason: "missing-endpoint" };
+  const endpoint = root.endsWith("/export-session") ? root : `${root}/export-session`;
 
   const token = import.meta.env.VITE_GCS_EXPORT_TOKEN;
 
@@ -20,3 +21,29 @@ export async function exportSessionToGcs(payload) {
 
   return response.json();
 }
+
+/**
+ * Streams raw audio data to GCS using browser fetch streaming (Chrome 105+).
+ * @param {string} sessionId
+ * @param {ReadableStream} audioStream
+ */
+export function streamAudioToGcs(sessionId, audioStream) {
+  const root = import.meta.env.VITE_GCS_EXPORT_ENDPOINT;
+  if (!root) return Promise.reject(new Error("missing-endpoint"));
+
+  const baseUrl = root.replace("/export-session", "");
+  const endpoint = `${baseUrl}/stream-audio?sessionId=${sessionId}`;
+  const token = import.meta.env.VITE_GCS_EXPORT_TOKEN;
+
+  return fetch(endpoint, {
+    method: "POST",
+    headers: {
+      "Content-Type": "audio/webm",
+      ...(token ? { "x-export-token": token } : {})
+    },
+    body: audioStream,
+    // @ts-ignore
+    duplex: "half"
+  });
+}
+

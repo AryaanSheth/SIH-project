@@ -12,7 +12,7 @@ import { BrainrotDetector } from "../lib/brainrotDetector";
 import { logDetection, upsertSession } from "../lib/firebaseLogger";
 import { getAdvice } from "../lib/geminiAdvisor";
 import { MediaPlayer } from "../lib/mediaPlayer";
-import { exportSessionToGcs } from "../lib/sessionExportClient";
+import { exportSessionToGcs, streamAudioToGcs } from "../lib/sessionExportClient";
 import { SpeechListener } from "../lib/speechRecognition";
 
 function makeSessionId() {
@@ -37,6 +37,7 @@ export default function MainApp() {
 
   const speechRef = useRef(null);
   const micStreamRef = useRef(null);
+  const mediaRecorderRef = useRef(null);
   const streamIntervalRef = useRef(null);
   const detectorRef = useRef(new BrainrotDetector(activeTriggers));
   const mediaPlayerRef = useRef(new MediaPlayer(activeTriggers));
@@ -182,14 +183,12 @@ export default function MainApp() {
       setStatus("Requesting microphone...");
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
-          noiseSuppression: true,   // filter background noise
-          echoCancellation: true,   // reduce echo/feedback
-          autoGainControl: true,    // amplify quiet/distant voices
+          noiseSuppression: true,
+          echoCancellation: true,
+          autoGainControl: true,
           sampleRate: { ideal: 48000 },
         }
       });
-      // Keep the stream alive — Chrome shares this audio pipeline with SpeechRecognition,
-      // so the constraints above (especially autoGainControl) apply to the recognition too.
       micStreamRef.current = stream;
 
       if (!speechRef.current) {
@@ -200,8 +199,8 @@ export default function MainApp() {
         });
       }
 
+      const now = Date.now();
       if (!startedAt) {
-        const now = Date.now();
         setStartedAt(now);
         void upsertSession(sessionId, {
           startedAt: now,
@@ -214,6 +213,30 @@ export default function MainApp() {
         });
       }
 
+      // Start continuous audio streaming to GCS (Chrome 105+ supports fetch streaming)
+      try {
+        const recorder = new MediaRecorder(stream, { mimeType: "audio/webm;codecs=opus" });
+        const audioStream = new ReadableStream({
+          start(controller) {
+            recorder.ondataavailable = async (e) => {
+              if (e.data.size > 0) {
+                const buffer = await e.data.arrayBuffer();
+                controller.enqueue(new Uint8Array(buffer));
+              }
+            };
+            recorder.onstop = () => controller.close();
+            recorder.start(1000); // 1-second chunks for processing
+          },
+          cancel() {
+            recorder.stop();
+          }
+        });
+        mediaRecorderRef.current = recorder;
+        void streamAudioToGcs(sessionId, audioStream);
+      } catch (streamErr) {
+        console.warn("Live audio streaming failed to initialize:", streamErr);
+      }
+
       speechRef.current.start();
       setIsListening(true);
       setStatus("Listening...");
@@ -224,6 +247,8 @@ export default function MainApp() {
 
   const stopListening = async () => {
     speechRef.current?.stop();
+    mediaRecorderRef.current?.stop();
+    mediaRecorderRef.current = null;
     micStreamRef.current?.getTracks().forEach((t) => t.stop());
     micStreamRef.current = null;
     setIsListening(false);
