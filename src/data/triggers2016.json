@@ -1,8 +1,8 @@
 [
   {"id":"harambe","phrases":["harambe"],"matchType":"exact","severity":10,"auraModifier":20,"category":"classic","media":{"sound":"/assets/sounds/harambe.mp3","gif":"/assets/gifs/harambe.gif","video":null,"duration":3000}},
-  {"id":"dabbing","phrases":["dabbing","dab on","dab"],"matchType":"substring","severity":8,"auraModifier":-15,"category":"classic","media":{"sound":"/assets/sounds/dabbing.mp3","gif":"/assets/gifs/dabbing.gif","video":null,"duration":2800}},
+  {"id":"dabbing","phrases":["dabbing","dab on","dab"],"matchType":"substring","severity":8,"auraModifier":-15,"category":"classic","media":{"sound":"/assets/sounds/dab.mp3","gif":"/assets/gifs/dabbing.gif","video":null,"duration":2800}},
   {"id":"damn-daniel","phrases":["damn daniel"],"matchType":"substring","severity":7,"auraModifier":-10,"category":"classic","media":{"sound":"/assets/sounds/damn-daniel.mp3","gif":"/assets/gifs/damn-daniel.gif","video":null,"duration":2800}},
-  {"id":"what-are-those","phrases":["what are those"],"matchType":"substring","severity":8,"auraModifier":-12,"category":"classic","media":{"sound":"/assets/sounds/what-are-those.mp3","gif":"/assets/gifs/what-are-those.gif","video":null,"duration":2800}},
-{"id":"its-lit","phrases":["it's lit","its lit"],"matchType":"substring","severity":6,"auraModifier":-8,"category":"classic","media":{"sound":"/assets/sounds/its-lit.mp3","gif":"/assets/gifs/its-lit.gif","video":null,"duration":2400}},
+  {"id":"what-are-those","phrases":["what are those"],"matchType":"substring","severity":8,"auraModifier":-12,"category":"classic","media":{"sound":null,"gif":"/assets/gifs/what-are-those.gif","video":null,"duration":2800}},
+{"id":"its-lit","phrases":["it's lit","its lit"],"matchType":"substring","severity":6,"auraModifier":-8,"category":"classic","media":{"sound":null,"gif":"/assets/gifs/its-lit.gif","video":null,"duration":2400}},
   {"id":"deez-nuts","phrases":["deez nuts"],"matchType":"substring","severity":9,"auraModifier":-18,"category":"classic","media":{"sound":"/assets/sounds/deez-nuts.mp3","gif":"/assets/gifs/deznuts.gif","video":null,"duration":3000}}
 ]

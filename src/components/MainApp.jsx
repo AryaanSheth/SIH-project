@@ -376,7 +376,13 @@ export default function MainApp() {
   };
 
   const toggleMode = () => {
-    setMode((prev) => (prev === "brainrot" ? "2016" : "brainrot"));
+    setMode((prev) => {
+      const next = prev === "brainrot" ? "2016" : "brainrot";
+      if (next === "2016") {
+        new Audio("/assets/sounds/broski.mp3").play().catch(() => {});
+      }
+      return next;
+    });
   };
 
   return (
