@@ -527,6 +527,44 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
   border: 2px solid #ffff00;
 }
 
+.hp-crypto-notice {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #1a0a00;
+  border: 3px solid #ff8800;
+  padding: 14px 18px;
+  margin-bottom: 28px;
+  box-shadow: 4px 4px 0 #ff8800;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.hp-crypto-notice strong { color: #facc15; display: block; }
+.hp-crypto-notice span:not(.hp-crypto-icon) { color: #d1d5db; }
+.hp-crypto-icon { font-size: 1.5rem; flex-shrink: 0; animation: blink 1.2s step-end infinite; }
+
+.hp-plan-usd {
+  font-size: 0.75rem;
+  color: #6b7280;
+  font-style: italic;
+  margin-top: -10px;
+}
+
+.hp-plan-coins {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.hp-plan-coins span {
+  background: #0a0015;
+  border: 1px dashed #7c3aed;
+  padding: 3px 8px;
+  font-size: 0.75rem;
+  color: #a855f7;
+}
+
 .hp-plan-name {
   font-size: 0.8rem;
   font-weight: 700;

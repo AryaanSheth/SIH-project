@@ -203,11 +203,21 @@ export default function HomePage() {
       <section className="hp-section" id="pricing">
         <h2 className="hp-section-title">transparent pricing</h2>
         <p className="hp-section-sub">we are very honest about taking your money</p>
+
+        <div className="hp-crypto-notice">
+          <span className="hp-crypto-icon">🚨</span>
+          <div>
+            <strong>WE DO NOT ACCEPT REAL MONEY.</strong>
+            <span> payment in dogecoin, shiba inu, or any other shitcoin ONLY. we do not make change. exchange rate calculated at time of vibes.</span>
+          </div>
+          <span className="hp-crypto-icon">🚨</span>
+        </div>
+
         <div className="hp-pricing-grid">
 
           <div className="hp-plan">
             <div className="hp-plan-name">FREE</div>
-            <div className="hp-plan-price">$0<span>/mo</span></div>
+            <div className="hp-plan-price">Ð 0<span>/mo</span></div>
             <ul className="hp-plan-features">
               <li>✅ Full brainrot detection</li>
               <li>✅ All 26 triggers</li>
@@ -222,7 +232,8 @@ export default function HomePage() {
           <div className="hp-plan hp-plan-featured">
             <div className="hp-plan-badge">MOST POPULAR (please)</div>
             <div className="hp-plan-name">SIGMA GRINDSET</div>
-            <div className="hp-plan-price">$9.99<span>/mo</span></div>
+            <div className="hp-plan-price">Ð 420<span>/mo</span></div>
+            <div className="hp-plan-usd">(≈ $9.99 but we don't take USD. cope.)</div>
             <ul className="hp-plan-features">
               <li>✅ Everything in Free</li>
               <li>✅ Your data sold (premium package)</li>
@@ -231,12 +242,21 @@ export default function HomePage() {
               <li>✅ Aura leaderboard access</li>
               <li>✅ We remember your name (scary)</li>
             </ul>
-            <button className="hp-btn-primary" onClick={() => navigate("/app")}>Lose More Aura →</button>
+            <div className="hp-plan-coins">
+              <span title="Dogecoin">🐕 DOGE</span>
+              <span title="Shiba Inu">🐕 SHIB</span>
+              <span title="SafeMoon">🌙 SAFEMOON</span>
+              <span title="whatever">💀 other</span>
+            </div>
+            <button className="hp-btn-primary" onClick={() => alert("send DOGE to: much_wow_very_rizz.doge\n\nwe will not confirm receipt. this is fine.")}>
+              Pay in DOGE →
+            </button>
           </div>
 
           <div className="hp-plan">
             <div className="hp-plan-name">ENTERPRISE</div>
             <div className="hp-plan-price">??<span>/mo</span></div>
+            <div className="hp-plan-usd">(price negotiable in SHIB, PEPE, or vibes)</div>
             <ul className="hp-plan-features">
               <li>✅ Everything in Sigma</li>
               <li>✅ Deploy to entire team</li>
@@ -245,12 +265,12 @@ export default function HomePage() {
               <li>✅ Custom brainrot dictionary</li>
               <li>✅ Dedicated account manager named Chad</li>
             </ul>
-            <a className="hp-btn-secondary hp-btn-block" href="mailto:chad@rizzistential.fake">Contact Chad →</a>
+            <a className="hp-btn-secondary hp-btn-block" href="mailto:chad@rizzistential.fake">Contact Chad (send PEPE) →</a>
           </div>
 
         </div>
         <p className="hp-fine-print" style={{ textAlign: "center", marginTop: 16 }}>
-          All plans include our standard data harvesting. Enterprise plans include premium data harvesting. By clicking anything on this page you have already agreed.
+          All plans include our standard data harvesting. Enterprise plans include premium data harvesting. By clicking anything on this page you have already agreed. Crypto payments are non-refundable. All crypto is non-refundable. Everything is non-refundable. Chad is not a financial advisor.
         </p>
       </section>
 

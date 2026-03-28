@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import FeedCard from "./FeedCard";
 import { subscribeToDetections } from "../lib/firebaseLogger";
 
 export default function FeedViewer() {
   const [events, setEvents] = useState([]);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const unsub = subscribeToDetections(setEvents, 50);
@@ -19,7 +21,10 @@ export default function FeedViewer() {
     <main className="app-shell">
       <header className="panel header">
         <div className="brand">BRAINROT FEED (LIVE)</div>
-        <div>AURA: {aura}</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+          <span>AURA: {aura}</span>
+          <button onClick={() => navigate("/app")}>← Back to App</button>
+        </div>
       </header>
       <section className="panel feed-panel">
         {events.length === 0 ? <div style={{ color: "#9ca3af" }}>No events yet. Start listening on main screen.</div> : null}

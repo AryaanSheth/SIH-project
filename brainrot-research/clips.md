@@ -1,6 +1,4 @@
 
-SKIBIDI TOILET THEME (same "brr brr skibidi dop dop" audio)
-— Skibidi, Skibidi toilet, on Skibidi, on skib, Skibidi rizz
 
 RIZZ SPARKLE / DING SFX (the shimmery "ding" or eye sparkle effect)
 — rizz, rizzing, rizzler, Kai cenat rizz, TikTok rizz party
