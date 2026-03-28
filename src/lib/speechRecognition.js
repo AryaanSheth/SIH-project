@@ -35,6 +35,10 @@ export class SpeechListener {
     };
 
     this.recognition.onerror = (event) => {
+      // "aborted" fires during the normal auto-restart cycle (Chrome stops
+      // recognition after silence then onend triggers a restart — the abort
+      // is expected and not a real error). "no-speech" is also non-critical.
+      if (event.error === "aborted" || event.error === "no-speech") return;
       this.onError?.(event.error || "speech-error");
     };
 

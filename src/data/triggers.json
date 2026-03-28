@@ -1,6 +1,6 @@
 [
   {"id":"skibidi","phrases":["skibidi","skibidi toilet"],"matchType":"substring","severity":9,"auraModifier":-20,"category":"brainrot","media":{"sound":"/assets/sounds/skibidi.mp3","gif":"/assets/gifs/skibidi.gif","video":null,"duration":3200}},
-  {"id":"rizz","phrases":["rizz"],"matchType":"substring","severity":7,"auraModifier":10,"category":"sigma","media":{"sound":"/assets/sounds/rizz.mp3","gif":"/assets/gifs/rizz.gif","video":null,"duration":2800}},
+  {"id":"rizz","phrases":["rizz","riz"],"matchType":"exact","displayName":"rizz","severity":7,"auraModifier":10,"category":"sigma","media":{"sound":"/assets/sounds/rizz.mp3","gif":"/assets/gifs/rizz.gif","video":null,"duration":2800}},
   {"id":"sigma","phrases":["sigma"],"matchType":"exact","severity":8,"auraModifier":15,"category":"sigma","media":{"sound":"/assets/sounds/sigma.mp3","gif":"/assets/gifs/sigma.gif","video":null,"duration":2800}},
   {"id":"gyatt","phrases":["gyatt"],"matchType":"substring","severity":9,"auraModifier":-15,"category":"brainrot","media":{"sound":"/assets/sounds/gyatt.mp3","gif":"/assets/gifs/gyatt.gif","video":null,"duration":3000}},
   {"id":"fanum-tax","phrases":["fanum tax"],"matchType":"substring","severity":8,"auraModifier":-10,"category":"brainrot","media":{"sound":"/assets/sounds/fanum-tax.mp3","gif":"/assets/gifs/fanum-tax.gif","video":null,"duration":2800}},

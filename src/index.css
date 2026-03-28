@@ -326,6 +326,7 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 .hp-title-red {
   color: #ff2222;
   text-decoration: underline wavy #ff8800;
+  text-underline-offset: 10px;
   display: inline-block;
   transform: rotate(-2deg);
   text-shadow: 3px 3px 0 #7c3aed;

@@ -34,10 +34,9 @@ export default function MainApp() {
   const [startedAt, setStartedAt] = useState(null);
 
   const speechRef = useRef(null);
+  const micStreamRef = useRef(null); // kept alive so Chrome shares audio pipeline with SpeechRecognition
   const detectorRef = useRef(new BrainrotDetector(activeTriggers));
   const mediaPlayerRef = useRef(new MediaPlayer(activeTriggers));
-  // Ref always pointing to the latest handleFinalTranscript (BUG-002: stale closure fix)
-  const onFinalRef = useRef(null);
   // Ref mirror of auraScore for synchronous reads in async handlers (BUG-002)
   const auraRef = useRef(0);
   // Ref counter for totalDetections — avoids stale state reads in async context (BUG-006)
@@ -77,9 +76,10 @@ export default function MainApp() {
 
     mediaPlayerRef.current.playSound(trigger.id);
 
+    const displayPhrase = trigger.displayName || matchedPhrase;
     const baseOverlay = {
       triggerId: trigger.id,
-      matchedPhrase,
+      matchedPhrase: displayPhrase,
       media: trigger.media,
       auraModifier: trigger.auraModifier,
       badAdvice: null
@@ -97,7 +97,7 @@ export default function MainApp() {
       id,
       triggerId: trigger.id, // stored so replay can look up media reliably (BUG-004)
       timestamp,
-      phrase: matchedPhrase,
+      phrase: displayPhrase,
       context,
       severity: trigger.severity,
       auraModifier: trigger.auraModifier,
@@ -131,19 +131,25 @@ export default function MainApp() {
       void handleDetection(matches[0]);
     }
   };
-  // Keep ref current every render so the SpeechListener always calls the latest version (BUG-002)
-  onFinalRef.current = handleFinalTranscript;
 
   const startListening = async () => {
     try {
       setStatus("Requesting microphone...");
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      stream.getTracks().forEach((t) => t.stop());
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          noiseSuppression: true,   // filter background noise
+          echoCancellation: true,   // reduce echo/feedback
+          autoGainControl: true,    // amplify quiet/distant voices
+          sampleRate: { ideal: 48000 },
+        }
+      });
+      // Keep the stream alive — Chrome shares this audio pipeline with SpeechRecognition,
+      // so the constraints above (especially autoGainControl) apply to the recognition too.
+      micStreamRef.current = stream;
 
       if (!speechRef.current) {
         speechRef.current = new SpeechListener({
-          // Stable wrapper — always delegates to the latest handleFinalTranscript via ref (BUG-002)
-          onFinal: (chunk, conf) => onFinalRef.current?.(chunk, conf),
+          onFinal: handleFinalTranscript,
           onInterim: setInterimText,
           onError: (err) => setStatus(`Speech error: ${err}`)
         });
@@ -170,6 +176,8 @@ export default function MainApp() {
 
   const stopListening = async () => {
     speechRef.current?.stop();
+    micStreamRef.current?.getTracks().forEach((t) => t.stop());
+    micStreamRef.current = null;
     setIsListening(false);
     setStatus("Stopped");
 
