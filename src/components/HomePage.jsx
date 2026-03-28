@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../lib/AuthContext";
 
 const TESTIMONIALS = [
   { name: "Skibidi_CEO", handle: "@definitely_real_ceo", text: "i said sigma once and my whole team got a notification. 10/10 product. lost 40 aura." },
@@ -78,6 +79,15 @@ function CornerPopup() {
 
 export default function HomePage() {
   const navigate = useNavigate();
+  const { user, loading, signIn, signOut } = useAuth();
+
+  const handleLaunch = () => {
+    if (user) {
+      navigate("/app");
+    } else {
+      signIn();
+    }
+  };
 
   return (
     <div className="homepage">
@@ -96,9 +106,18 @@ export default function HomePage() {
           <a href="#pricing">Pricing</a>
           <a href="#features">Features</a>
           <a href="#testimonials">Testimonials</a>
-          <button className="hp-btn-primary" onClick={() => navigate("/app")}>
-            Launch App →
-          </button>
+          {!loading && user ? (
+            <div className="hp-nav-user">
+              {user.photoURL && <img src={user.photoURL} alt="" className="auth-avatar" referrerPolicy="no-referrer" />}
+              <span className="hp-nav-username">{user.displayName}</span>
+              <button className="hp-btn-primary" onClick={() => navigate("/app")}>Open App →</button>
+              <button className="hp-btn-secondary hp-btn-sm" onClick={signOut}>Sign out</button>
+            </div>
+          ) : (
+            <button className="hp-btn-primary" onClick={handleLaunch} disabled={loading}>
+              {loading ? "..." : "Launch App →"}
+            </button>
+          )}
         </div>
       </nav>
 
@@ -121,8 +140,8 @@ export default function HomePage() {
           <strong>Real-time phrase recognition. Chaotic media responses. Zero coping.</strong>
         </p>
         <div className="hp-hero-cta">
-          <button className="hp-btn-primary hp-btn-big" onClick={() => navigate("/app")}>
-            Start Losing Aura — Free*
+          <button className="hp-btn-primary hp-btn-big" onClick={handleLaunch}>
+            {user ? "Open App →" : "Sign in to Start Losing Aura — Free*"}
           </button>
           <span className="hp-fine-print">*free tier exists. we still sell your data on the free tier. especially the free tier.</span>
         </div>
@@ -226,7 +245,7 @@ export default function HomePage() {
               <li>❌ Support (figure it out)</li>
               <li>❌ Privacy (see above)</li>
             </ul>
-            <button className="hp-btn-secondary" onClick={() => navigate("/app")}>Start for Free</button>
+            <button className="hp-btn-secondary" onClick={handleLaunch}>{user ? "Open App" : "Sign in — Free"}</button>
           </div>
 
           <div className="hp-plan hp-plan-featured">
@@ -302,8 +321,8 @@ export default function HomePage() {
       <section className="hp-cta-section">
         <h2>ready to destroy your aura?</h2>
         <p className="hp-muted">join thousands of users whose data we have already sold</p>
-        <button className="hp-btn-primary hp-btn-big" onClick={() => navigate("/app")}>
-          Open App (we dare you)
+        <button className="hp-btn-primary hp-btn-big" onClick={handleLaunch}>
+          {user ? "Open App (we dare you)" : "Sign in (we dare you)"}
         </button>
         <p className="hp-fine-print">
           By using this product you agree that: brainrot is real, Ohio exists as a state of mind, sigma is a lifestyle, and we can sell your data to anyone including but not limited to Big Skibidi LLC and the Fanum Tax Authority.

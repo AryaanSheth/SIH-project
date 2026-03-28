@@ -1,4 +1,5 @@
 import { initializeApp } from "firebase/app";
+import { getAuth } from "firebase/auth";
 import { getDatabase } from "firebase/database";
 
 const firebaseConfig = {
@@ -14,9 +15,11 @@ const hasFirebaseConfig = Boolean(
 );
 
 let db = null;
+let auth = null;
 if (hasFirebaseConfig) {
   const app = initializeApp(firebaseConfig);
   db = getDatabase(app);
+  auth = getAuth(app);
 }
 
-export { db, hasFirebaseConfig };
+export { auth, db, hasFirebaseConfig };

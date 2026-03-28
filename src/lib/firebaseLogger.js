@@ -20,6 +20,29 @@ export async function upsertSession(sessionId, sessionPatch) {
   });
 }
 
+// Top 10 sessions by finalAura — used for the leaderboard
+export function subscribeToLeaderboard(callback, limit = 10) {
+  if (!hasFirebaseConfig || !db) {
+    callback([]);
+    return () => {};
+  }
+
+  const sessionsRef = query(
+    ref(db, "sessions"),
+    orderByChild("finalAura"),
+    limitToLast(limit)
+  );
+
+  return onValue(sessionsRef, (snapshot) => {
+    const raw = snapshot.val();
+    const sessions = raw
+      ? Object.entries(raw).map(([id, value]) => ({ id, ...value }))
+      : [];
+    sessions.sort((a, b) => (b.finalAura || 0) - (a.finalAura || 0));
+    callback(sessions);
+  });
+}
+
 export function subscribeToDetections(callback, limit = 50) {
   if (!hasFirebaseConfig || !db) {
     callback([]);

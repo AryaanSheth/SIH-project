@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import FeedCard from "./FeedCard";
+import Leaderboard from "./Leaderboard";
 import { subscribeToDetections } from "../lib/firebaseLogger";
 
 export default function FeedViewer() {
@@ -26,12 +27,15 @@ export default function FeedViewer() {
           <button onClick={() => navigate("/app")}>← Back to App</button>
         </div>
       </header>
-      <section className="panel feed-panel">
-        {events.length === 0 ? <div style={{ color: "#9ca3af" }}>No events yet. Start listening on main screen.</div> : null}
-        {events.map((event) => (
-          <FeedCard event={event} key={event.id || event.timestamp} />
-        ))}
-      </section>
+      <div className="feed-layout">
+        <section className="panel feed-panel">
+          {events.length === 0 ? <div style={{ color: "#9ca3af" }}>No events yet. Start listening on main screen.</div> : null}
+          {events.map((event) => (
+            <FeedCard event={event} key={event.id || event.timestamp} />
+          ))}
+        </section>
+        <Leaderboard />
+      </div>
     </main>
   );
 }

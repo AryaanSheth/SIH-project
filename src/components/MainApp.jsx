@@ -7,6 +7,7 @@ import TranscriptPanel from "./TranscriptPanel";
 import triggers from "../data/triggers.json";
 import triggers2016 from "../data/triggers2016.json";
 import { applyAuraModifier } from "../lib/auraCalculator";
+import { useAuth } from "../lib/AuthContext";
 import { BrainrotDetector } from "../lib/brainrotDetector";
 import { logDetection, upsertSession } from "../lib/firebaseLogger";
 import { getAdvice } from "../lib/geminiAdvisor";
@@ -19,6 +20,7 @@ function makeSessionId() {
 }
 
 export default function MainApp() {
+  const { user, signIn, signOut } = useAuth();
   const [mode, setMode] = useState("brainrot");
   const activeTriggers = mode === "2016" ? triggers2016 : triggers;
 
@@ -34,21 +36,61 @@ export default function MainApp() {
   const [startedAt, setStartedAt] = useState(null);
 
   const speechRef = useRef(null);
-  const micStreamRef = useRef(null); // kept alive so Chrome shares audio pipeline with SpeechRecognition
+  const micStreamRef = useRef(null);
+  const streamIntervalRef = useRef(null);
   const detectorRef = useRef(new BrainrotDetector(activeTriggers));
   const mediaPlayerRef = useRef(new MediaPlayer(activeTriggers));
-  // Ref mirror of auraScore for synchronous reads in async handlers (BUG-002)
   const auraRef = useRef(0);
-  // Ref counter for totalDetections — avoids stale state reads in async context (BUG-006)
   const detectionCountRef = useRef(0);
+  // Refs for streaming interval — always hold latest state without stale closures
+  const finalSegmentsRef = useRef([]);
+  const detectionsRef = useRef([]);
+  const sessionIdRef = useRef(sessionId);
+  const modeRef = useRef(mode);
+  const startedAtRef = useRef(null);
 
   useEffect(() => {
     detectorRef.current = new BrainrotDetector(activeTriggers);
     mediaPlayerRef.current = new MediaPlayer(activeTriggers);
   }, [activeTriggers]);
 
-  // Keep auraRef in sync with state so async handlers always read the latest value
+  // Keep refs in sync with state so streaming interval always reads latest values
   useEffect(() => { auraRef.current = auraScore; }, [auraScore]);
+  useEffect(() => { finalSegmentsRef.current = finalSegments; }, [finalSegments]);
+  useEffect(() => { detectionsRef.current = detections; }, [detections]);
+  useEffect(() => { sessionIdRef.current = sessionId; }, [sessionId]);
+  useEffect(() => { modeRef.current = mode; }, [mode]);
+  useEffect(() => { startedAtRef.current = startedAt; }, [startedAt]);
+
+  // 15-second GCS streaming interval — fires while listening
+  useEffect(() => {
+    if (!isListening) return;
+    streamIntervalRef.current = setInterval(() => {
+      const now = Date.now();
+      void exportSessionToGcs({
+        sessionId: sessionIdRef.current,
+        mode: modeRef.current,
+        startedAt: startedAtRef.current,
+        endedAt: null,
+        transcript: finalSegmentsRef.current,
+        detections: detectionsRef.current,
+        auraScore: auraRef.current,
+        uid: user?.uid || null,
+        metadata: {
+          totalDetections: detectionCountRef.current,
+          runtimeSeconds: startedAtRef.current
+            ? Math.floor((now - startedAtRef.current) / 1000)
+            : 0,
+          exportedAt: now,
+          streaming: true,
+        }
+      });
+    }, 15000);
+    return () => {
+      clearInterval(streamIntervalRef.current);
+      streamIntervalRef.current = null;
+    };
+  }, [isListening, user?.uid]);
 
   // Real-time session clock — ticks every second while listening (BUG-005)
   const [runtimeSeconds, setRuntimeSeconds] = useState(0);
@@ -118,7 +160,10 @@ export default function MainApp() {
       startedAt,
       totalDetections: detectionCountRef.current,
       finalAura: nextAura,
-      mode
+      mode,
+      uid: user?.uid || null,
+      displayName: user?.displayName || "Anonymous",
+      photoURL: user?.photoURL || null,
     });
   };
 
@@ -162,7 +207,10 @@ export default function MainApp() {
           startedAt: now,
           totalDetections: 0,
           finalAura: 0,
-          mode
+          mode,
+          uid: user?.uid || null,
+          displayName: user?.displayName || "Anonymous",
+          photoURL: user?.photoURL || null,
         });
       }
 
@@ -209,7 +257,10 @@ export default function MainApp() {
       endedAt,
       totalDetections: detections.length,
       finalAura: auraScore,
-      mode
+      mode,
+      uid: user?.uid || null,
+      displayName: user?.displayName || "Anonymous",
+      photoURL: user?.photoURL || null,
     });
 
     detectionCountRef.current = 0;
@@ -249,6 +300,17 @@ export default function MainApp() {
           onStop={stopListening}
           onToggleMode={toggleMode}
         />
+        <div className="auth-controls">
+          {user ? (
+            <>
+              {user.photoURL && <img src={user.photoURL} alt="" className="auth-avatar" referrerPolicy="no-referrer" />}
+              <span className="auth-name">{user.displayName}</span>
+              <button onClick={signOut}>Sign out</button>
+            </>
+          ) : (
+            <button className="primary" onClick={signIn}>Sign in with Google</button>
+          )}
+        </div>
       </header>
 
       <section className="main-grid">
