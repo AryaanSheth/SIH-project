@@ -25,7 +25,8 @@ body {
 /* ── Main App Shell ───────────────────────────────────────── */
 
 .app-shell {
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
   display: grid;
   grid-template-rows: auto 1fr auto;
   gap: 12px;
@@ -87,7 +88,7 @@ body {
 .history-panel,
 .feed-panel {
   padding: 12px;
-  min-height: 250px;
+  min-height: 0;
   overflow: auto;
 }
 
@@ -320,14 +321,19 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
   grid-template-columns: 1fr 320px;
   gap: 12px;
   overflow: hidden;
+  height: calc(100vh - 80px);
+}
+
+.feed-panel {
+  overflow-y: auto;
+  height: 100%;
 }
 
 /* Leaderboard */
 .leaderboard {
   padding: 14px;
-  align-self: start;
-  position: sticky;
-  top: 12px;
+  overflow-y: auto;
+  height: 100%;
 }
 
 .lb-title {
