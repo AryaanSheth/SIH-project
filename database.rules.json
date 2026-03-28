@@ -1,0 +1,22 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "detections": {
+      ".read": true,
+      ".write": true,
+      ".indexOn": ["timestamp"]
+    },
+    "sessions": {
+      ".read": true,
+      ".write": true
+    },
+    "users": {
+      ".read": true,
+      "$uid": {
+        ".write": "auth != null && auth.uid == $uid"
+      },
+      ".indexOn": ["totalAura"]
+    }
+  }
+}

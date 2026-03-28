@@ -31,45 +31,54 @@ export async function upsertSession(sessionId, sessionPatch) {
 
   // 2. Update the global User Profile if we have a UID
   if (uid) {
+    console.log(`[Firebase] Upserting session for user: ${uid}`, sessionPatch);
     const userRef = ref(db, `users/${uid}`);
     const newAura = Number(finalAura ?? 0);
     const newDets = Number(totalDetections ?? 0);
     const newSentiment = Number(sessionPatch.sentiment?.score ?? 0);
 
-    await runTransaction(userRef, (userData) => {
-      if (!userData) {
+    try {
+      const result = await runTransaction(userRef, (userData) => {
+        console.log(`[Firebase] Running transaction for user ${uid}. Current data:`, userData);
+        if (!userData) {
+          return {
+            uid,
+            displayName: displayName || "Anonymous",
+            photoURL: photoURL || null,
+            totalAura: newAura,
+            totalDetections: newDets,
+            lastVibe: newSentiment,
+            sessionStats: { [sessionId]: { aura: newAura, dets: newDets } },
+            updatedAt: Date.now()
+          };
+        }
+
+        const stats = userData.sessionStats || {};
+        const lastSessionStats = stats[sessionId] || { aura: 0, dets: 0 };
+        
+        const auraDelta = newAura - Number(lastSessionStats.aura || 0);
+        const detDelta = newDets - Number(lastSessionStats.dets || 0);
+
         return {
-          uid,
-          displayName: displayName || "Anonymous",
-          photoURL: photoURL || null,
-          totalAura: newAura,
-          totalDetections: newDets,
+          ...userData,
+          displayName: displayName || userData.displayName,
+          photoURL: photoURL || userData.photoURL,
+          totalAura: Number(userData.totalAura || 0) + auraDelta,
+          totalDetections: Number(userData.totalDetections || 0) + detDelta,
           lastVibe: newSentiment,
-          sessionStats: { [sessionId]: { aura: newAura, dets: newDets } },
+          sessionStats: {
+            ...stats,
+            [sessionId]: { aura: newAura, dets: newDets }
+          },
           updatedAt: Date.now()
         };
-      }
-
-      const stats = userData.sessionStats || {};
-      const lastSessionStats = stats[sessionId] || { aura: 0, dets: 0 };
-      
-      const auraDelta = newAura - Number(lastSessionStats.aura || 0);
-      const detDelta = newDets - Number(lastSessionStats.dets || 0);
-
-      return {
-        ...userData,
-        displayName: displayName || userData.displayName,
-        photoURL: photoURL || userData.photoURL,
-        totalAura: Number(userData.totalAura || 0) + auraDelta,
-        totalDetections: Number(userData.totalDetections || 0) + detDelta,
-        lastVibe: newSentiment,
-        sessionStats: {
-          ...stats,
-          [sessionId]: { aura: newAura, dets: newDets }
-        },
-        updatedAt: Date.now()
-      };
-    });
+      });
+      console.log(`[Firebase] Transaction result for ${uid}:`, result.committed ? "Committed" : "Aborted");
+    } catch (err) {
+      console.error(`[Firebase] Transaction FAILED for ${uid}:`, err);
+    }
+  } else {
+    console.log("[Firebase] Skipping user update (no UID provided)");
   }
 }
 
@@ -102,11 +111,13 @@ export function subscribeToLeaderboard(callback, limit = 10) {
 
   return onValue(usersRef, (snapshot) => {
     const raw = snapshot.val();
+    console.log("[Firebase] Leaderboard snapshot raw:", raw);
     const accounts = raw
       ? Object.entries(raw).map(([uid, value]) => ({ uid, ...value }))
       : [];
     // Sort descending by totalAura
     accounts.sort((a, b) => (b.totalAura || 0) - (a.totalAura || 0));
+    console.log("[Firebase] Leaderboard processed accounts:", accounts);
     callback(accounts);
   });
 }
