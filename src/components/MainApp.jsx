@@ -12,9 +12,10 @@ import { BrainrotDetector } from "../lib/brainrotDetector";
 import { logDetection, upsertSession } from "../lib/firebaseLogger";
 import { getAdvice } from "../lib/geminiAdvisor";
 import { MediaPlayer } from "../lib/mediaPlayer";
-import { exportSessionToGcs, streamAudioToGcs } from "../lib/sessionExportClient";
+import { exportSessionToGcs, streamAudioToGcs, uploadFullAudioToGcs, isFetchStreamingSupported } from "../lib/sessionExportClient";
 import { SpeechListener } from "../lib/speechRecognition";
 import { subscribeToUserStats } from "../lib/firebaseLogger";
+import { getBestAudioMimeType } from "../lib/browserUtils";
 
 function comboMultiplier(combo) {
   if (combo >= 4) return 3;
@@ -58,6 +59,7 @@ export default function MainApp() {
 
   const auraRef = useRef(0);
   const detectionCountRef = useRef(0);
+  const chunksRef = useRef([]); // To collect audio data when streaming is NOT supported
   // Refs for streaming interval — always hold latest state without stale closures
   const finalSegmentsRef = useRef([]);
   const detectionsRef = useRef([]);
@@ -238,6 +240,9 @@ export default function MainApp() {
         }
       });
       micStreamRef.current = stream;
+      
+      // Safari/iOS unlock
+      void mediaPlayerRef.current.unlock();
 
       if (!speechRef.current) {
         speechRef.current = new SpeechListener({
@@ -263,24 +268,38 @@ export default function MainApp() {
 
       // Start continuous audio streaming to GCS (Chrome 105+ supports fetch streaming)
       try {
-        const recorder = new MediaRecorder(stream, { mimeType: "audio/webm;codecs=opus" });
-        const audioStream = new ReadableStream({
-          start(controller) {
-            recorder.ondataavailable = async (e) => {
-              if (e.data.size > 0) {
-                const buffer = await e.data.arrayBuffer();
-                controller.enqueue(new Uint8Array(buffer));
-              }
-            };
-            recorder.onstop = () => controller.close();
-            recorder.start(1000); // 1-second chunks for processing
-          },
-          cancel() {
-            recorder.stop();
-          }
-        });
-        mediaRecorderRef.current = recorder;
-        void streamAudioToGcs(sessionId, audioStream);
+        const mimeType = getBestAudioMimeType();
+        console.log(`[Media] Using MIME type: ${mimeType || "default"}`);
+        
+        const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : {});
+        chunksRef.current = []; // Clear old chunks
+
+        if (isFetchStreamingSupported) {
+          const audioStream = new ReadableStream({
+            start(controller) {
+              recorder.ondataavailable = async (e) => {
+                if (e.data.size > 0) {
+                  const buffer = await e.data.arrayBuffer();
+                  controller.enqueue(new Uint8Array(buffer));
+                }
+              };
+              recorder.onstop = () => controller.close();
+              recorder.start(1000); // 1-second chunks for processing
+            },
+            cancel() {
+              recorder.stop();
+            }
+          });
+          mediaRecorderRef.current = recorder;
+          void streamAudioToGcs(sessionId, audioStream);
+        } else {
+          // Fallback: Just collect chunks locally
+          recorder.ondataavailable = (e) => {
+            if (e.data.size > 0) chunksRef.current.push(e.data);
+          };
+          recorder.start(1000);
+          mediaRecorderRef.current = recorder;
+        }
       } catch (streamErr) {
         console.warn("Live audio streaming failed to initialize:", streamErr);
       }
@@ -322,6 +341,14 @@ export default function MainApp() {
       const result = await exportSessionToGcs(payload);
       const finalSentiment = result.sentiment || null;
       setStatus("Stopped - transcript exported to GCS");
+
+      // Handle Monolithic Audio Upload for non-streaming browsers
+      if (!isFetchStreamingSupported && chunksRef.current.length > 0) {
+        console.log("[Media] Browser doesn't support streaming, uploading collected audio...");
+        const mimeType = getBestAudioMimeType();
+        const blob = new Blob(chunksRef.current, mimeType ? { type: mimeType } : {});
+        void uploadFullAudioToGcs(sessionId, blob, mimeType || "audio/webm");
+      }
 
       void upsertSession(sessionId, {
         startedAt,

@@ -10,6 +10,24 @@ export class MediaPlayer {
       this.audioCache.set(trigger.id, audio);
     }
   }
+  
+  /**
+   * Safari/iOS requirement: The first play must be triggered by a direct user gesture.
+   * This "unlocks" the audio context for future background plays.
+   */
+  async unlock() {
+    // Play a tiny silent sound to trigger the initial user-interaction requirement
+    const silentBlob = new Blob(
+      [new Uint8Array([71, 105, 102, 56, 57, 97, 1, 0, 1, 0, 128, 0, 0, 0, 0, 0, 255, 255, 255, 33, 249, 4, 1, 0, 0, 0, 0, 44, 0, 0, 0, 0, 1, 0, 1, 0, 0, 2, 2, 68, 1, 0, 59])],
+      { type: "audio/wav" }
+    );
+    const silentAudio = new Audio(URL.createObjectURL(silentBlob));
+    try {
+      await silentAudio.play();
+    } catch (e) {
+      console.warn("Audio unlock failed (likely no user gesture):", e);
+    }
+  }
 
   playSound(triggerId) {
     const audio = this.audioCache.get(triggerId);
