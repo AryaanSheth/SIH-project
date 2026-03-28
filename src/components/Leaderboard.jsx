@@ -23,7 +23,7 @@ export default function Leaderboard() {
       ) : (
         <div className="lb-list">
           {entries.map((entry, index) => (
-            <div className="lb-entry" key={entry.id ?? index}>
+            <div className="lb-entry" key={entry.uid ?? index}>
               <span className="lb-rank">#{index + 1}</span>
 
               <div className="lb-user">
@@ -41,11 +41,11 @@ export default function Leaderboard() {
 
               <span
                 className="lb-score"
-                style={{ color: entry.finalAura >= 0 ? "green" : "red" }}
+                style={{ color: (entry.totalAura || 0) >= 0 ? "green" : "red" }}
               >
-                {entry.finalAura >= 0
-                  ? `+${entry.finalAura} aura`
-                  : `${entry.finalAura} aura`}
+                {(entry.totalAura || 0) >= 0
+                  ? `+${entry.totalAura || 0} aura`
+                  : `${entry.totalAura || 0} aura`}
               </span>
 
               <span className="lb-detections" style={{ color: "var(--muted, #888)" }}>
@@ -57,4 +57,5 @@ export default function Leaderboard() {
       )}
     </div>
   );
+
 }
