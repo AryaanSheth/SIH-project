@@ -1,4 +1,4 @@
-project_id = "hjd-dev-hub-ca"
+project_id = "sih-winter-2026"
 region     = "northamerica-northeast1"
 
 # Keep true if you want future-proof APIs pre-enabled for schedule/secret workflows.
