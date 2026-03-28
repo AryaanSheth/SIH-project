@@ -15,6 +15,13 @@ import { MediaPlayer } from "../lib/mediaPlayer";
 import { exportSessionToGcs, streamAudioToGcs } from "../lib/sessionExportClient";
 import { SpeechListener } from "../lib/speechRecognition";
 
+function comboMultiplier(combo) {
+  if (combo >= 4) return 3;
+  if (combo === 3) return 2;
+  if (combo === 2) return 1.5;
+  return 1;
+}
+
 function makeSessionId() {
   return `sess_${Math.random().toString(36).slice(2, 10)}_${Date.now()}`;
 }
@@ -41,6 +48,11 @@ export default function MainApp() {
   const streamIntervalRef = useRef(null);
   const detectorRef = useRef(new BrainrotDetector(activeTriggers));
   const mediaPlayerRef = useRef(new MediaPlayer(activeTriggers));
+  const [comboCount, setComboCount] = useState(1);
+  const comboCountRef = useRef(1);
+  const lastDetectionTimeRef = useRef(0);
+  const comboResetTimerRef = useRef(null);
+
   const auraRef = useRef(0);
   const detectionCountRef = useRef(0);
   // Refs for streaming interval — always hold latest state without stale closures
@@ -109,13 +121,33 @@ export default function MainApp() {
     const timestamp = Date.now();
     const id = `det_${timestamp}`;
 
+    // Combo tracking
+    const timeSinceLast = timestamp - lastDetectionTimeRef.current;
+    const newCombo = lastDetectionTimeRef.current > 0 && timeSinceLast < 5000
+      ? comboCountRef.current + 1
+      : 1;
+    comboCountRef.current = newCombo;
+    setComboCount(newCombo);
+    lastDetectionTimeRef.current = timestamp;
+    clearTimeout(comboResetTimerRef.current);
+    comboResetTimerRef.current = setTimeout(() => {
+      comboCountRef.current = 1;
+      setComboCount(1);
+    }, 5000);
+
+    const mult = comboMultiplier(newCombo);
+    const effectiveModifier = Math.round(trigger.auraModifier * mult);
+    const wasInDebt = auraRef.current < 0;
+
     // Read from ref to get the latest value regardless of closure age (BUG-002)
-    const nextAura = applyAuraModifier(auraRef.current, trigger.auraModifier);
+    const nextAura = applyAuraModifier(auraRef.current, effectiveModifier);
     setAuraScore(nextAura);
     auraRef.current = nextAura; // Update immediately so concurrent detections see it
 
+    // Harder shake when entering debt for the first time
+    const shakeDuration = (!wasInDebt && nextAura < 0) ? 1200 : 500;
     setIsShaking(true);
-    setTimeout(() => setIsShaking(false), 500);
+    setTimeout(() => setIsShaking(false), shakeDuration);
 
     mediaPlayerRef.current.playSound(trigger.id);
 
@@ -124,7 +156,8 @@ export default function MainApp() {
       triggerId: trigger.id,
       matchedPhrase: displayPhrase,
       media: trigger.media,
-      auraModifier: trigger.auraModifier,
+      auraModifier: effectiveModifier,
+      combo: newCombo,
       badAdvice: null
     };
     setOverlay(baseOverlay);
@@ -143,7 +176,8 @@ export default function MainApp() {
       phrase: displayPhrase,
       context,
       severity: trigger.severity,
-      auraModifier: trigger.auraModifier,
+      auraModifier: effectiveModifier,
+      combo: newCombo,
       cumulativeAura: nextAura,
       badAdvice,
       category: trigger.category,
@@ -289,6 +323,10 @@ export default function MainApp() {
     });
 
     detectionCountRef.current = 0;
+    comboCountRef.current = 1;
+    setComboCount(1);
+    lastDetectionTimeRef.current = 0;
+    clearTimeout(comboResetTimerRef.current);
     setSessionId(makeSessionId());
     setStartedAt(null);
   };
@@ -340,7 +378,7 @@ export default function MainApp() {
 
       <section className="main-grid">
         <div className="left-stack">
-          <AuraCounter score={auraScore} />
+          <AuraCounter score={auraScore} combo={comboCount} />
           <TranscriptPanel finalSegments={finalSegments} interimText={interimText} />
         </div>
         <DetectionHistory detections={detections} onReplay={replayDetection} />

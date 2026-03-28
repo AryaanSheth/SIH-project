@@ -59,12 +59,14 @@ body {
   display: grid;
   grid-template-columns: 2fr 1fr;
   gap: 12px;
+  min-height: 0;
 }
 
 .left-stack {
   display: grid;
   grid-template-rows: auto 1fr;
   gap: 12px;
+  min-height: 0;
 }
 
 .aura {
@@ -83,6 +85,43 @@ body {
 }
 
 .aura-value.flash { transform: scale(1.12); }
+
+.aura-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.aura-debt {
+  border-color: #ef4444 !important;
+  box-shadow: 4px 4px 0 #ef444466 !important;
+  animation: blink-border 1s step-end infinite;
+}
+
+@keyframes blink-border {
+  0%, 100% { border-color: #ef4444; }
+  50% { border-color: #ff8800; }
+}
+
+.combo-badge {
+  background: #f97316;
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 999px;
+  letter-spacing: 0.05em;
+  animation: blink 0.5s step-end infinite;
+  white-space: nowrap;
+}
+
+.debt-label {
+  font-size: 0.75rem;
+  color: #ef4444;
+  margin-top: 4px;
+  animation: blink 1s step-end infinite;
+}
 
 .transcript-panel,
 .history-panel,
