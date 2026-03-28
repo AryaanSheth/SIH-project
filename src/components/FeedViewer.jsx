@@ -1,11 +1,14 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import FeedCard from "./FeedCard";
 import Leaderboard from "./Leaderboard";
-import { subscribeToDetections } from "../lib/firebaseLogger";
+import { subscribeToDetections, subscribeToUserStats } from "../lib/firebaseLogger";
+import { useAuth } from "../lib/AuthContext";
 
 export default function FeedViewer() {
   const [events, setEvents] = useState([]);
+  const [userStats, setUserStats] = useState(null);
+  const { user } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -13,10 +16,15 @@ export default function FeedViewer() {
     return () => unsub?.();
   }, []);
 
-  const aura = useMemo(
-    () => events.reduce((sum, e) => sum + Number(e.auraModifier || 0), 0),
-    [events]
-  );
+  useEffect(() => {
+    if (!user?.uid) return;
+    const unsub = subscribeToUserStats(user.uid, (data) => {
+      setUserStats(data);
+    });
+    return () => unsub?.();
+  }, [user?.uid]);
+
+  const aura = userStats?.totalAura ?? 0;
 
   return (
     <main className="app-shell">

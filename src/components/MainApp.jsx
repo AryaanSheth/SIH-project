@@ -14,6 +14,7 @@ import { getAdvice } from "../lib/geminiAdvisor";
 import { MediaPlayer } from "../lib/mediaPlayer";
 import { exportSessionToGcs, streamAudioToGcs } from "../lib/sessionExportClient";
 import { SpeechListener } from "../lib/speechRecognition";
+import { subscribeToUserStats } from "../lib/firebaseLogger";
 
 function comboMultiplier(combo) {
   if (combo >= 4) return 3;
@@ -33,6 +34,7 @@ export default function MainApp() {
 
   const [isListening, setIsListening] = useState(false);
   const [isQRFull, setIsQRFull] = useState(false);
+  const [userStats, setUserStats] = useState(null);
   const [status, setStatus] = useState("Idle");
   const [interimText, setInterimText] = useState("");
   const [finalSegments, setFinalSegments] = useState([]);
@@ -75,6 +77,17 @@ export default function MainApp() {
   useEffect(() => { sessionIdRef.current = sessionId; }, [sessionId]);
   useEffect(() => { modeRef.current = mode; }, [mode]);
   useEffect(() => { startedAtRef.current = startedAt; }, [startedAt]);
+
+  useEffect(() => {
+    if (!user?.uid) {
+      setUserStats(null);
+      return;
+    }
+    const unsub = subscribeToUserStats(user.uid, (data) => {
+      setUserStats(data);
+    });
+    return () => unsub?.();
+  }, [user?.uid]);
 
   // 15-second GCS streaming interval — fires while listening
   useEffect(() => {
@@ -306,22 +319,35 @@ export default function MainApp() {
     };
 
     try {
-      await exportSessionToGcs(payload);
+      const result = await exportSessionToGcs(payload);
+      const finalSentiment = result.sentiment || null;
       setStatus("Stopped - transcript exported to GCS");
+
+      void upsertSession(sessionId, {
+        startedAt,
+        endedAt,
+        totalDetections: detections.length,
+        finalAura: auraScore,
+        mode,
+        uid: user?.uid || null,
+        displayName: user?.displayName || "Anonymous",
+        photoURL: user?.photoURL || null,
+        sentiment: finalSentiment
+      });
     } catch (err) {
       setStatus(`Stopped - export failed (${err.message})`);
+      
+      void upsertSession(sessionId, {
+        startedAt,
+        endedAt,
+        totalDetections: detections.length,
+        finalAura: auraScore,
+        mode,
+        uid: user?.uid || null,
+        displayName: user?.displayName || "Anonymous",
+        photoURL: user?.photoURL || null,
+      });
     }
-
-    void upsertSession(sessionId, {
-      startedAt,
-      endedAt,
-      totalDetections: detections.length,
-      finalAura: auraScore,
-      mode,
-      uid: user?.uid || null,
-      displayName: user?.displayName || "Anonymous",
-      photoURL: user?.photoURL || null,
-    });
 
     detectionCountRef.current = 0;
     comboCountRef.current = 1;
@@ -367,6 +393,10 @@ export default function MainApp() {
         <div className="auth-controls">
           {user ? (
             <>
+              <div className="lifetime-info" style={{ marginRight: 12, textAlign: "right" }}>
+                <div style={{ fontSize: "0.7rem", color: "var(--muted)" }}>LIFETIME AURA</div>
+                <div style={{ fontWeight: 800, color: "var(--purple)" }}>{userStats?.totalAura ?? 0}</div>
+              </div>
               {user.photoURL && <img src={user.photoURL} alt="" className="auth-avatar" referrerPolicy="no-referrer" />}
               <span className="auth-name">{user.displayName}</span>
               <button onClick={signOut}>Sign out</button>
