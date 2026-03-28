@@ -80,6 +80,7 @@ function CornerPopup() {
 export default function HomePage() {
   const navigate = useNavigate();
   const { user, loading, signIn, signOut } = useAuth();
+  const [isQRFull, setIsQRFull] = useState(false);
 
   const handleLaunch = () => {
     if (user) {
@@ -331,13 +332,26 @@ export default function HomePage() {
 
       {/* FOOTER */}
       <footer className="hp-footer">
-        <div className="hp-brand">RIZZ-ISTENTIAL CRISIS™</div>
-        <div className="hp-muted" style={{ fontSize: "0.8rem", marginTop: 8 }}>
-          © 2024 Rizz-istential Crisis Inc. Legally incorporated in Ohio. All aura lost is non-refundable.
-          <br />
-          We WILL sell your data · <a href="/feed" style={{ color: "var(--purple)" }}>Live Feed</a> · <a href="/app" style={{ color: "var(--green)" }}>Launch App</a>
+        <div className="hp-footer-content">
+          <div className="hp-brand">RIZZ-ISTENTIAL CRISIS™</div>
+          <div className="hp-muted" style={{ fontSize: "0.8rem", marginTop: 8 }}>
+            © 2024 Rizz-istential Crisis Inc. Legally incorporated in Ohio. All aura lost is non-refundable.
+            <br />
+            We WILL sell your data · <a href="/feed" style={{ color: "var(--purple)" }}>Live Feed</a> · <a href="/app" style={{ color: "var(--green)" }}>Launch App</a>
+          </div>
+        </div>
+        <div className="qr-container-bottom" onClick={() => setIsQRFull(true)}>
+          <img src="/assets/qrcode/qrcode.png" alt="Scan to join" className="qr-code-bottom" title="Click to enlarge" />
+          <span className="qr-label-bottom">JOIN BY PHONE</span>
         </div>
       </footer>
+
+      {isQRFull && (
+        <div className="qr-full-overlay" onClick={() => setIsQRFull(false)}>
+          <img src="/assets/qrcode/qrcode.png" alt="QR Code" />
+          <div className="qr-full-label">SCAN TO JOIN</div>
+        </div>
+      )}
 
       {/* CORNER POPUP AD */}
       <CornerPopup />

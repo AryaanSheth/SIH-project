@@ -32,6 +32,7 @@ export default function MainApp() {
   const activeTriggers = mode === "2016" ? triggers2016 : triggers;
 
   const [isListening, setIsListening] = useState(false);
+  const [isQRFull, setIsQRFull] = useState(false);
   const [status, setStatus] = useState("Idle");
   const [interimText, setInterimText] = useState("");
   const [finalSegments, setFinalSegments] = useState([]);
@@ -385,10 +386,23 @@ export default function MainApp() {
       </section>
 
       <footer className="panel statusbar code">
-        <span>Status: {status}</span>
-        <span>Detections: {detections.length}</span>
-        <span>Session: {runtimeSeconds}s</span>
+        <div className="footer-stats">
+          <span>Status: {status}</span>
+          <span>Detections: {detections.length}</span>
+          <span>Session: {runtimeSeconds}s</span>
+        </div>
+        <div className="qr-container-bottom" onClick={() => setIsQRFull(true)}>
+          <img src="/assets/qrcode/qrcode.png" alt="Scan to join" className="qr-code-bottom" title="Click to enlarge" />
+          <span className="qr-label-bottom">JOIN BY PHONE</span>
+        </div>
       </footer>
+
+      {isQRFull && (
+        <div className="qr-full-overlay" onClick={() => setIsQRFull(false)}>
+          <img src="/assets/qrcode/qrcode.png" alt="QR Code" />
+          <div className="qr-full-label">SCAN FOR THE RIZZ</div>
+        </div>
+      )}
 
       <MediaOverlay overlay={overlay} />
     </main>
