@@ -19,6 +19,11 @@ export class MediaPlayer {
       audio.pause();
       audio.currentTime = 0;
       void audio.play();
+      clearTimeout(audio._stopTimer);
+      audio._stopTimer = setTimeout(() => {
+        audio.pause();
+        audio.currentTime = 0;
+      }, 5000);
     } catch {
       // Ignore autoplay failures during hackathon demo.
     }
