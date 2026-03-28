@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import AuraCounter from "./AuraCounter";
 import Controls from "./Controls";
 import DetectionHistory from "./DetectionHistory";
@@ -36,24 +36,41 @@ export default function MainApp() {
   const speechRef = useRef(null);
   const detectorRef = useRef(new BrainrotDetector(activeTriggers));
   const mediaPlayerRef = useRef(new MediaPlayer(activeTriggers));
+  // Ref always pointing to the latest handleFinalTranscript (BUG-002: stale closure fix)
+  const onFinalRef = useRef(null);
+  // Ref mirror of auraScore for synchronous reads in async handlers (BUG-002)
+  const auraRef = useRef(0);
+  // Ref counter for totalDetections — avoids stale state reads in async context (BUG-006)
+  const detectionCountRef = useRef(0);
 
   useEffect(() => {
     detectorRef.current = new BrainrotDetector(activeTriggers);
     mediaPlayerRef.current = new MediaPlayer(activeTriggers);
   }, [activeTriggers]);
 
-  const runtimeSeconds = useMemo(() => {
-    if (!startedAt) return 0;
-    return Math.floor((Date.now() - startedAt) / 1000);
-  }, [startedAt, finalSegments.length, detections.length]);
+  // Keep auraRef in sync with state so async handlers always read the latest value
+  useEffect(() => { auraRef.current = auraScore; }, [auraScore]);
+
+  // Real-time session clock — ticks every second while listening (BUG-005)
+  const [runtimeSeconds, setRuntimeSeconds] = useState(0);
+  useEffect(() => {
+    if (!startedAt) { setRuntimeSeconds(0); return; }
+    setRuntimeSeconds(Math.floor((Date.now() - startedAt) / 1000));
+    const id = setInterval(() => {
+      setRuntimeSeconds(Math.floor((Date.now() - startedAt) / 1000));
+    }, 1000);
+    return () => clearInterval(id);
+  }, [startedAt]);
 
   const handleDetection = async (match) => {
     const { trigger, matchedPhrase, context } = match;
     const timestamp = Date.now();
     const id = `det_${timestamp}`;
 
-    const nextAura = applyAuraModifier(auraScore, trigger.auraModifier);
+    // Read from ref to get the latest value regardless of closure age (BUG-002)
+    const nextAura = applyAuraModifier(auraRef.current, trigger.auraModifier);
     setAuraScore(nextAura);
+    auraRef.current = nextAura; // Update immediately so concurrent detections see it
 
     setIsShaking(true);
     setTimeout(() => setIsShaking(false), 500);
@@ -78,6 +95,7 @@ export default function MainApp() {
 
     const event = {
       id,
+      triggerId: trigger.id, // stored so replay can look up media reliably (BUG-004)
       timestamp,
       phrase: matchedPhrase,
       context,
@@ -91,13 +109,14 @@ export default function MainApp() {
 
     setOverlay((prev) => (prev ? { ...prev, badAdvice } : prev));
     setDetections((prev) => [event, ...prev].slice(0, 50));
+    detectionCountRef.current += 1; // increment synchronously (BUG-006)
 
     setTimeout(() => setOverlay(null), trigger?.media?.duration || 3000);
 
     void logDetection(event);
     void upsertSession(sessionId, {
       startedAt,
-      totalDetections: detections.length + 1,
+      totalDetections: detectionCountRef.current,
       finalAura: nextAura,
       mode
     });
@@ -112,6 +131,8 @@ export default function MainApp() {
       void handleDetection(matches[0]);
     }
   };
+  // Keep ref current every render so the SpeechListener always calls the latest version (BUG-002)
+  onFinalRef.current = handleFinalTranscript;
 
   const startListening = async () => {
     try {
@@ -121,7 +142,8 @@ export default function MainApp() {
 
       if (!speechRef.current) {
         speechRef.current = new SpeechListener({
-          onFinal: handleFinalTranscript,
+          // Stable wrapper — always delegates to the latest handleFinalTranscript via ref (BUG-002)
+          onFinal: (chunk, conf) => onFinalRef.current?.(chunk, conf),
           onInterim: setInterimText,
           onError: (err) => setStatus(`Speech error: ${err}`)
         });
@@ -182,16 +204,19 @@ export default function MainApp() {
       mode
     });
 
+    detectionCountRef.current = 0;
     setSessionId(makeSessionId());
     setStartedAt(null);
   };
 
   const replayDetection = (det) => {
+    // Use stored triggerId (BUG-004); fall back to phrase-derived path for older events
+    const tid = det.triggerId || String(det.phrase).toLowerCase().replace(/\s+/g, "-");
     const fakeOverlay = {
-      triggerId: det.phrase,
+      triggerId: tid,
       matchedPhrase: det.phrase,
       media: {
-        gif: `/assets/gifs/${String(det.phrase).toLowerCase().replace(/\s+/g, "-")}.gif`,
+        gif: `/assets/gifs/${tid}.gif`,
         video: null
       },
       auraModifier: det.auraModifier,
