@@ -2,13 +2,29 @@ import { useEffect, useState } from "react";
 import { subscribeToLeaderboard } from "../lib/firebaseLogger";
 import { useAuth } from "../lib/AuthContext";
 
+const FAKE_ENTRIES = [
+  { uid: "fake-1", displayName: "SigmaKingActual", photoURL: null, totalAura: 9420, totalDetections: 3, lastVibe: 0.9 },
+  { uid: "fake-2", displayName: "MewingMaster69", photoURL: null, totalAura: 7331, totalDetections: 12, lastVibe: 0.7 },
+  { uid: "fake-3", displayName: "ohio_escapee", photoURL: null, totalAura: 6900, totalDetections: 47, lastVibe: 0.6 },
+  { uid: "fake-4", displayName: "HarambeSurvivor", photoURL: null, totalAura: 5555, totalDetections: 8, lastVibe: 0.8 },
+  { uid: "fake-5", displayName: "NoCapCEO", photoURL: null, totalAura: 4200, totalDetections: 21, lastVibe: 0.5 },
+  { uid: "fake-6", displayName: "RizzGod_Fr_Fr", photoURL: null, totalAura: 3999, totalDetections: 16, lastVibe: 0.7 },
+  { uid: "fake-7", displayName: "SkibidiAvoider", photoURL: null, totalAura: 2847, totalDetections: 5, lastVibe: 0.4 },
+  { uid: "fake-8", displayName: "AlphaGrindset", photoURL: null, totalAura: 1337, totalDetections: 33, lastVibe: 0.3 },
+];
+
 export default function Leaderboard() {
-  const [entries, setEntries] = useState([]);
+  const [entries, setEntries] = useState(FAKE_ENTRIES);
   const { user, signIn } = useAuth();
 
   useEffect(() => {
     const unsubscribe = subscribeToLeaderboard((data) => {
-      setEntries(data);
+      const realUids = new Set(data.map((e) => e.uid));
+      const fakes = FAKE_ENTRIES.filter((f) => !realUids.has(f.uid));
+      const merged = [...data, ...fakes]
+        .sort((a, b) => (b.totalAura || 0) - (a.totalAura || 0))
+        .slice(0, 10);
+      setEntries(merged);
     });
 
     return () => {
